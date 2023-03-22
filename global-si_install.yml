@@ -1,7 +1,18 @@
 ---
 - hosts: localhost
   vars:
-  - CONFIG_FOLDER: "/home/ubuntu/software/src/"
+  - CONFIG_FOLDER: ansible_env.HOME
+  - si_repo_path: "images.opencadc.org/storage-inventory/"
+  - baldur_version: 0.3.0
+  - minoc_version: 0.9.1
+  - raven_version: 0.7.0
+  - tantar_version: 0.4.0
+  - ratik_version: 0.1.2
+  - fenwick_version: 0.5.2
+  - critwall_version: 0.4.0
+  - luskan_version: 0.6.0
+  - postgresql_image: "swsrc/cadc-postgresql-12-dev"
+  - haproxy_image: "amigahub/cadc-haproxy"
   - wait_seconds: 7
   - wait_seconds_long: 70
 
@@ -17,9 +28,9 @@
   - name: Clone repo
     become: yes
     ansible.builtin.git:
-      repo: 'https://gitlab.com/jsancheziaa/cadc-storage-inventory'
-      dest:  "{{CONFIG_FOLDER}}/cadc-storage-inventory"
-      version: swsrc
+      repo: 'https://gitlab.com/fkirsten/global-si'
+      dest:  "{{CONFIG_FOLDER}}/global-si"
+      #version: swsrc
     ignore_errors: True
 
   - name: Install dependencies python-crypto python3-pip docker.io
@@ -49,176 +60,230 @@
     pip:
       name: docker
 
-  - name: Pull swsrc/cadc-postgresql-12-dev image
+  - name: Pull {{postgresql_image}}
     become: yes
     docker_image:
-      name: swsrc/cadc-postgresql-12-dev
+      name: {{postgresql_image}}
       source: pull
 
-  - name: Pull amigahub/cadc-haproxy image
+  - name: Pull {{haproxy_image}}
     become: yes
     docker_image:
-      name: amigahub/cadc-haproxy
+      name: {{haproxy_image}}
       source: pull
 
-  - name: Pull amigahub/minoc image
+  - name: Pull baldur:{{baldur_version}}
     become: yes
     docker_image:
-      name: amigahub/minoc
+      name: {{si_repo_path}}/baldur:{{baldur_version}}
       source: pull
 
-  - name: Pull amigahub/luskan image
+  - name: Pull minoc:{{minoc_version}}
     become: yes
     docker_image:
-      name: amigahub/luskan
+      name: {{si_repo_path}}/minoc:{{minoc_version}}
       source: pull
 
-  - name: Pull amigahub/fenwick image
+  - name: Pull raven:{{raven_version}}
     become: yes
     docker_image:
-      name: amigahub/fenwick
+      name: {{si_repo_path}}/raven:{{raven_version}}
       source: pull
 
-  - name: Pull amigahub/critwall image
+  - name: Pull tantar:{{tantar_version}}
     become: yes
     docker_image:
-      name: amigahub/critwall
+      name: {{si_repo_path}}/tantar:{{tantar_version}}
       source: pull
 
-# Create ssl cert without manual entry, both minoc and haproxy need these
-  - name: Create private key
-    community.crypto.openssl_privatekey:
-      path: "/tmp/ssl_private.key"
-      size: 2048
-      mode: 0400
-      type: RSA
+  - name: Pull ratik:{{ratik_version}}
+    become: yes
+    docker_image:
+      name: {{si_repo_path}}/ratik:{{ratik_version}}
+      source: pull
 
-  - name: Create self-signed certificate
-    community.crypto.x509_certificate:
-      path: "/tmp/ssl_cert.pem"
-      privatekey_path: "/tmp/ssl_private.key"
-      provider: selfsigned
-      mode: 0644
+  - name: Pull fenwick:{{fenwick_version}}
+    become: yes
+    docker_image:
+      name: {{si_repo_path}}/fenwick:{{fenwick_version}}
+      source: pull
 
-  - name: Copy the SSL public key to the minoc config directory
-    ansible.builtin.copy:
-      src: "/tmp/ssl_cert.pem"
-      dest: "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/minoc/ssl_cert.pem"
+  - name: Pull critwall:{{critwall_version}}
+    become: yes
+    docker_image:
+      name: {{si_repo_path}}/critwall:{{critwall_version}}
+      source: pull
 
-# following https://www.ansiblepilot.com/articles/concatenate-multiple-files-in-a-specific-order-ansible-module-template-and-yaml/ we concatenate the public and private key for the haproxy
+  - name: Pull luskan:{{luskan_version}}
+    become: yes
+    docker_image:
+      name: {{si_repo_path}}/luskan:{{luskan_version}}
+      source: pull
 
-  - name: Prep file list to concatenate SSL certificate and private key for haproxy
-    include_vars:
-      file: "{{CONFIG_FOLDER}}/cadc-storage-inventory/concatenate/input_files.yaml"
-      name: files
-
-  - name: Concatenate certificate and private key
-    ansible.builtin.template:
-      src: "{{CONFIG_FOLDER}}/cadc-storage-inventory/concatenate/concatenate.j2"
-      dest: "{{CONFIG_FOLDER}}/cadc-storage-inventory/certs/server-cert.pem"
-      mode: 0644
-
-  - name: Launch container cadc-postgresql
+## Create ssl cert without manual entry, both minoc and haproxy need these
+#  - name: Create private key
+#    community.crypto.openssl_privatekey:
+#      path: "/tmp/ssl_private.key"
+#      size: 2048
+#      mode: 0400
+#      type: RSA
+#
+#  - name: Create self-signed certificate
+#    community.crypto.x509_certificate:
+#      path: "/tmp/ssl_cert.pem"
+#      privatekey_path: "/tmp/ssl_private.key"
+#      provider: selfsigned
+#      mode: 0644
+#
+#  - name: Copy the SSL public key to the minoc config directory
+#    ansible.builtin.copy:
+#      src: "/tmp/ssl_cert.pem"
+#      dest: "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/minoc/ssl_cert.pem"
+#
+## following https://www.ansiblepilot.com/articles/concatenate-multiple-files-in-a-specific-order-ansible-module-template-and-yaml/ we concatenate the public and private key for the haproxy
+#
+#  - name: Prep file list to concatenate SSL certificate and private key for haproxy
+#    include_vars:
+#      file: "{{CONFIG_FOLDER}}/cadc-storage-inventory/concatenate/input_files.yaml"
+#      name: files
+#
+#  - name: Concatenate certificate and private key
+#    ansible.builtin.template:
+#      src: "{{CONFIG_FOLDER}}/cadc-storage-inventory/concatenate/concatenate.j2"
+#      dest: "{{CONFIG_FOLDER}}/cadc-storage-inventory/certs/server-cert.pem"
+#      mode: 0644
+#
+  - name: Launch {{postgresql_image}}:latest
     become: yes
     docker_container:
       name: pg12db
-      image: swsrc/cadc-postgresql-12-dev:latest
+      image: {{postgresql_image}}:latest
       ports:
         - "5432:5432"
       volumes:
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/postgresql:/config:ro"
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/logs/postgresql:/logs:rw"
+        - "{{CONFIG_FOLDER}}/global-si/config/postgresql:/config:ro"
+        - "{{CONFIG_FOLDER}}/global-si/logs/postgresql:/logs:rw"
       state: started
   - name: pause for postgresl
     ansible.builtin.pause:
       seconds: "{{ wait_seconds_long | int }}"
 
-  - name: Launch cadc-minoc
+  - name: Launch raven
     become: yes
     docker_container:
-      name: minoc
-      image: amigahub/minoc:latest
+      name: raven
+      image: {{si_repo_path}}/raven:{{raven_version}}
       user: "tomcat:tomcat"
       links:
         - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/minoc:/config:ro"
+        - "{{CONFIG_FOLDER}}/global-si/config/raven:/config:ro"
       state: started
 
-  - name: pause for wait to minoc
+  - name: pause for wait to raven
     ansible.builtin.pause:
       seconds: "{{ wait_seconds | int }}"
 
-  - name: Launch cadc-luskan
+  - name: Launch tantar
     become: yes
     docker_container:
-      name: luskan
-      image: amigahub/luskan:latest
-      user: "tomcat:tomcat"
+      name: tantar
+      image: {{si_repo_path}}/tantar:{{tantar_version}}
+      user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/luskan:/config:ro"
+        - "{{CONFIG_FOLDER}}/global-si/config/tantar:/config:ro"
       state: started
 
-  - name: pause for luskan
+  - name: pause for wait to tantar
     ansible.builtin.pause:
       seconds: "{{ wait_seconds | int }}"
 
-  - name: Launch cadc-fenwick
+  - name: Launch ratik
+    become: yes
+    docker_container:
+      name: ratik
+      image: {{si_repo_path}}/ratik:{{ratik_version}}
+      user: "opencadc:opencadc"
+      links:
+        - "pg12db:pg12db"
+      volumes:
+        - "{{CONFIG_FOLDER}}/global-si/config/ratik:/config:ro"
+      state: started
+
+  - name: pause for wait to ratik
+    ansible.builtin.pause:
+      seconds: "{{ wait_seconds | int }}"
+
+  - name: Launch fenwick
     become: yes
     docker_container:
       name: fenwick
-      image: amigahub/fenwick:latest
+      image: {{si_repo_path}}/fenwick:{{fenwick_version}}
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/fenwick:/config:ro"
+        - "{{CONFIG_FOLDER}}/global-si/config/fenwick:/config:ro"
       state: started
-    ignore_errors: False
 
-  - name: pause for fenwick
+  - name: pause for wait to fenwick
     ansible.builtin.pause:
       seconds: "{{ wait_seconds | int }}"
 
-  - name: Launch cadc-critwall
+  - name: Launch critwall
     become: yes
     docker_container:
       name: critwall
-      image: amigahub/critwall:latest
+      image: {{si_repo_path}}/critwall:{{critwall_version}}
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/critwall:/config:ro"
+        - "{{CONFIG_FOLDER}}/global-si/config/critwall:/config:ro"
       state: started
-    ignore_errors: False
 
-  - name: pause for critwall
+  - name: pause for wait to critwall
+    ansible.builtin.pause:
+      seconds: "{{ wait_seconds | int }}"
+
+  - name: Launch luskan
+    become: yes
+    docker_container:
+      name: luskan
+      image: {{si_repo_path}}/luskan:{{luskan_version}}
+      user: "tomcat:tomcat"
+      links:
+        - "pg12db:pg12db"
+      volumes:
+        - "{{CONFIG_FOLDER}}/global-si/config/luskan:/config:ro"
+      state: started
+
+  - name: pause for wait to luskan
     ansible.builtin.pause:
       seconds: "{{ wait_seconds | int }}"
 
   - name: create a folder for certificates
     become: yes
     ansible.builtin.file:
-      path: "{{CONFIG_FOLDER}}/cadc-storage-inventory/certs"
+      path: "{{CONFIG_FOLDER}}/global-si/certs"
       state: directory
       mode: 0775
 
-  - name: Launch cadc-haproxy
+  - name: Launch {{haproxy_image}}
     become: yes
     docker_container:
       name: haproxy
-      image: amigahub/cadc-haproxy:latest
+      image: {{haproxy_image}}:latest
       ports:
         - "8443:443"
       volumes:
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/logs/haproxy:/logs:rw"
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/certs:/config:ro"
-        - "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/haproxy:/usr/local/etc/haproxy/:rw"
+        - "{{CONFIG_FOLDER}}/global-si/logs/haproxy:/logs:rw"
+        - "{{CONFIG_FOLDER}}/global-si/certs:/config:ro"
+        - "{{CONFIG_FOLDER}}/global-si/config/haproxy:/usr/local/etc/haproxy/:rw"
       links:
-        - "minoc:minoc"
+#        - "minoc:minoc"
         - "luskan:luskan"
         - "critwall:critwall"
         - "fenwick:fenwick"
