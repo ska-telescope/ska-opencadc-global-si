@@ -1,8 +1,8 @@
 ---
 - hosts: localhost
   vars:
-  - CONFIG_FOLDER: ansible_env.HOME
-  - si_repo_path: "images.opencadc.org/storage-inventory/"
+  - CONFIG_FOLDER: "/home/gi-spsrc/"
+  - si_repo_path: "images.opencadc.org/storage-inventory"
   - baldur_version: 0.3.0
   - minoc_version: 0.9.1
   - raven_version: 0.7.0
@@ -14,11 +14,11 @@
   - postgresql_image: "swsrc/cadc-postgresql-12-dev"
   - haproxy_image: "amigahub/cadc-haproxy"
   - wait_seconds: 7
-  - wait_seconds_long: 70
+  - wait_seconds_long: 10
 
   tasks:
 
-  - name: create a folder
+  - name: creating {{CONFIG_FOLDER}}
     become: yes
     ansible.builtin.file:
       path: "{{CONFIG_FOLDER}}"
@@ -33,13 +33,12 @@
       #version: swsrc
     ignore_errors: True
 
-  - name: Install dependencies python-crypto python3-pip docker.io
+  - name: Install dependencies python-crypto python3-pi
     become: yes
     ansible.builtin.apt:
       pkg:
         - python-crypto
         - python3-pip
-        - docker.io
       state: present
       
   - name: Install Python bcoz docker SDK
@@ -50,10 +49,10 @@
     command: "pip3 list | grep docker"
     register: docker_sdk
 
-  - name: Installing Docker SDK
-    pip:
-            name: docker-py
-    when: "docker_sdk.rc != 0"
+#  - name: Installing Docker SDK
+#    pip:
+#            name: docker-py
+#    when: "docker_sdk.rc != 0"
 
   - name: Install Docker Module for Python
     become: yes
@@ -63,61 +62,61 @@
   - name: Pull {{postgresql_image}}
     become: yes
     docker_image:
-      name: {{postgresql_image}}
+      name: "{{postgresql_image}}"
       source: pull
 
   - name: Pull {{haproxy_image}}
     become: yes
     docker_image:
-      name: {{haproxy_image}}
+      name: "{{haproxy_image}}"
       source: pull
 
   - name: Pull baldur:{{baldur_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/baldur:{{baldur_version}}
+      name: "{{si_repo_path}}/baldur:{{baldur_version}}"
       source: pull
 
   - name: Pull minoc:{{minoc_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/minoc:{{minoc_version}}
+      name: "{{si_repo_path}}/minoc:{{minoc_version}}"
       source: pull
 
   - name: Pull raven:{{raven_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/raven:{{raven_version}}
+      name: "{{si_repo_path}}/raven:{{raven_version}}"
       source: pull
 
   - name: Pull tantar:{{tantar_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/tantar:{{tantar_version}}
+      name: "{{si_repo_path}}/tantar:{{tantar_version}}"
       source: pull
 
   - name: Pull ratik:{{ratik_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/ratik:{{ratik_version}}
+      name: "{{si_repo_path}}/ratik:{{ratik_version}}"
       source: pull
 
   - name: Pull fenwick:{{fenwick_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/fenwick:{{fenwick_version}}
+      name: "{{si_repo_path}}/fenwick:{{fenwick_version}}"
       source: pull
 
   - name: Pull critwall:{{critwall_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/critwall:{{critwall_version}}
+      name: "{{si_repo_path}}/critwall:{{critwall_version}}"
       source: pull
 
   - name: Pull luskan:{{luskan_version}}
     become: yes
     docker_image:
-      name: {{si_repo_path}}/luskan:{{luskan_version}}
+      name: "{{si_repo_path}}/luskan:{{luskan_version}}"
       source: pull
 
 ## Create ssl cert without manual entry, both minoc and haproxy need these
@@ -157,7 +156,7 @@
     become: yes
     docker_container:
       name: pg12db
-      image: {{postgresql_image}}:latest
+      image: "{{postgresql_image}}:latest"
       ports:
         - "5432:5432"
       volumes:
@@ -172,7 +171,7 @@
     become: yes
     docker_container:
       name: raven
-      image: {{si_repo_path}}/raven:{{raven_version}}
+      image: "{{si_repo_path}}/raven:{{raven_version}}"
       user: "tomcat:tomcat"
       links:
         - "pg12db:pg12db"
@@ -188,7 +187,7 @@
     become: yes
     docker_container:
       name: tantar
-      image: {{si_repo_path}}/tantar:{{tantar_version}}
+      image: "{{si_repo_path}}/tantar:{{tantar_version}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -204,7 +203,7 @@
     become: yes
     docker_container:
       name: ratik
-      image: {{si_repo_path}}/ratik:{{ratik_version}}
+      image: "{{si_repo_path}}/ratik:{{ratik_version}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -220,7 +219,7 @@
     become: yes
     docker_container:
       name: fenwick
-      image: {{si_repo_path}}/fenwick:{{fenwick_version}}
+      image: "{{si_repo_path}}/fenwick:{{fenwick_version}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -236,7 +235,7 @@
     become: yes
     docker_container:
       name: critwall
-      image: {{si_repo_path}}/critwall:{{critwall_version}}
+      image: "{{si_repo_path}}/critwall:{{critwall_version}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -252,7 +251,7 @@
     become: yes
     docker_container:
       name: luskan
-      image: {{si_repo_path}}/luskan:{{luskan_version}}
+      image: "{{si_repo_path}}/luskan:{{luskan_version}}"
       user: "tomcat:tomcat"
       links:
         - "pg12db:pg12db"
@@ -275,7 +274,7 @@
     become: yes
     docker_container:
       name: haproxy
-      image: {{haproxy_image}}:latest
+      image: "{{haproxy_image}}:latest"
       ports:
         - "8443:443"
       volumes:
