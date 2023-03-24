@@ -49,11 +49,6 @@
     command: "pip3 list | grep docker"
     register: docker_sdk
 
-#  - name: Installing Docker SDK
-#    pip:
-#            name: docker-py
-#    when: "docker_sdk.rc != 0"
-
   - name: Install Docker Module for Python
     become: yes
     pip:
