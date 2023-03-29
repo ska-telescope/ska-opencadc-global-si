@@ -2,19 +2,19 @@
 - hosts: localhost
   vars:
   - CONFIG_FOLDER: "/home/gi-spsrc/"
-  - si_repo_path: "images.opencadc.org/storage-inventory"
-  - baldur_version: 0.3.0
-  - minoc_version: 0.9.1
-  - raven_version: 0.7.0
-  - tantar_version: 0.4.0
-  - ratik_version: 0.1.2
-  - fenwick_version: 0.5.2
-  - critwall_version: 0.4.0
-  - luskan_version: 0.6.0
-  - postgresql_image: "swsrc/cadc-postgresql-12-dev"
-  - haproxy_image: "amigahub/cadc-haproxy"
-  - wait_seconds: 7
-  - wait_seconds_long: 10
+  - SI_REPO_PATH: "images.opencadc.org/storage-inventory"
+  - BALDUR_VERSION: 0.3.0
+  - MINOC_VERSION: 0.9.1
+  - RAVEN_VERSION: 0.7.0
+  - TANTAR_VERSION: 0.4.0
+  - RATIK_VERSION: 0.1.2
+  - FENWICK_VERSION: 0.5.2
+  - CRITWALL_VERSION: 0.4.0
+  - LUSKAN_VERSION: 0.6.0
+  - POSTGRESQL_IMAGE: "swsrc/cadc-postgresql-12-dev"
+  - HAPROXY_IMAGE: "amigahub/cadc-haproxy"
+  - WAIT_SECONDS: 7
+  - WAIT_SECONDS_LONG: 10
 
   tasks:
 
@@ -54,104 +54,71 @@
     pip:
       name: docker
 
-  - name: Pull {{postgresql_image}}
+  - name: Pull {{POSTGRESQL_IMAGE}}
     become: yes
     docker_image:
-      name: "{{postgresql_image}}"
+      name: "{{POSTGRESQL_IMAGE}}"
       source: pull
 
-  - name: Pull {{haproxy_image}}
+  - name: Pull {{HAPROXY_IMAGE}}
     become: yes
     docker_image:
-      name: "{{haproxy_image}}"
+      name: "{{HAPROXY_IMAGE}}"
       source: pull
 
-  - name: Pull baldur:{{baldur_version}}
+  - name: Pull baldur:{{BALDUR_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/baldur:{{baldur_version}}"
+      name: "{{SI_REPO_PATH}}/baldur:{{BALDUR_VERSION}}"
       source: pull
 
-  - name: Pull minoc:{{minoc_version}}
+  - name: Pull minoc:{{MINOC_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/minoc:{{minoc_version}}"
+      name: "{{SI_REPO_PATH}}/minoc:{{MINOC_VERSION}}"
       source: pull
 
-  - name: Pull raven:{{raven_version}}
+  - name: Pull raven:{{RAVEN_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/raven:{{raven_version}}"
+      name: "{{SI_REPO_PATH}}/raven:{{RAVEN_VERSION}}"
       source: pull
 
-  - name: Pull tantar:{{tantar_version}}
+  - name: Pull tantar:{{TANTAR_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/tantar:{{tantar_version}}"
+      name: "{{SI_REPO_PATH}}/tantar:{{TANTAR_VERSION}}"
       source: pull
 
-  - name: Pull ratik:{{ratik_version}}
+  - name: Pull ratik:{{RATIK_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/ratik:{{ratik_version}}"
+      name: "{{SI_REPO_PATH}}/ratik:{{RATIK_VERSION}}"
       source: pull
 
-  - name: Pull fenwick:{{fenwick_version}}
+  - name: Pull fenwick:{{FENWICK_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/fenwick:{{fenwick_version}}"
+      name: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
       source: pull
 
-  - name: Pull critwall:{{critwall_version}}
+  - name: Pull critwall:{{CRITWALL_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/critwall:{{critwall_version}}"
+      name: "{{SI_REPO_PATH}}/critwall:{{CRITWALL_VERSION}}"
       source: pull
 
-  - name: Pull luskan:{{luskan_version}}
+  - name: Pull luskan:{{LUSKAN_VERSION}}
     become: yes
     docker_image:
-      name: "{{si_repo_path}}/luskan:{{luskan_version}}"
+      name: "{{SI_REPO_PATH}}/luskan:{{LUSKAN_VERSION}}"
       source: pull
 
-## Create ssl cert without manual entry, both minoc and haproxy need these
-#  - name: Create private key
-#    community.crypto.openssl_privatekey:
-#      path: "/tmp/ssl_private.key"
-#      size: 2048
-#      mode: 0400
-#      type: RSA
-#
-#  - name: Create self-signed certificate
-#    community.crypto.x509_certificate:
-#      path: "/tmp/ssl_cert.pem"
-#      privatekey_path: "/tmp/ssl_private.key"
-#      provider: selfsigned
-#      mode: 0644
-#
-#  - name: Copy the SSL public key to the minoc config directory
-#    ansible.builtin.copy:
-#      src: "/tmp/ssl_cert.pem"
-#      dest: "{{CONFIG_FOLDER}}/cadc-storage-inventory/config/minoc/ssl_cert.pem"
-#
-## following https://www.ansiblepilot.com/articles/concatenate-multiple-files-in-a-specific-order-ansible-module-template-and-yaml/ we concatenate the public and private key for the haproxy
-#
-#  - name: Prep file list to concatenate SSL certificate and private key for haproxy
-#    include_vars:
-#      file: "{{CONFIG_FOLDER}}/cadc-storage-inventory/concatenate/input_files.yaml"
-#      name: files
-#
-#  - name: Concatenate certificate and private key
-#    ansible.builtin.template:
-#      src: "{{CONFIG_FOLDER}}/cadc-storage-inventory/concatenate/concatenate.j2"
-#      dest: "{{CONFIG_FOLDER}}/cadc-storage-inventory/certs/server-cert.pem"
-#      mode: 0644
-#
-  - name: Launch {{postgresql_image}}:latest
+  - name: Launch {{POSTGRESQL_IMAGE}}:latest
     become: yes
     docker_container:
       name: pg12db
-      image: "{{postgresql_image}}:latest"
+      image: "{{POSTGRESQL_IMAGE}}:latest"
       ports:
         - "5432:5432"
       volumes:
@@ -160,13 +127,13 @@
       state: started
   - name: pause for postgresl
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds_long | int }}"
+      seconds: "{{ WAIT_SECONDS_LONG | int }}"
 
   - name: Launch raven
     become: yes
     docker_container:
       name: raven
-      image: "{{si_repo_path}}/raven:{{raven_version}}"
+      image: "{{SI_REPO_PATH}}/raven:{{RAVEN_VERSION}}"
       user: "tomcat:tomcat"
       links:
         - "pg12db:pg12db"
@@ -176,13 +143,13 @@
 
   - name: pause for wait to raven
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds | int }}"
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: Launch tantar
     become: yes
     docker_container:
       name: tantar
-      image: "{{si_repo_path}}/tantar:{{tantar_version}}"
+      image: "{{SI_REPO_PATH}}/tantar:{{TANTAR_VERSION}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -192,13 +159,13 @@
 
   - name: pause for wait to tantar
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds | int }}"
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: Launch ratik
     become: yes
     docker_container:
       name: ratik
-      image: "{{si_repo_path}}/ratik:{{ratik_version}}"
+      image: "{{SI_REPO_PATH}}/ratik:{{RATIK_VERSION}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -208,13 +175,13 @@
 
   - name: pause for wait to ratik
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds | int }}"
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: Launch fenwick
     become: yes
     docker_container:
       name: fenwick
-      image: "{{si_repo_path}}/fenwick:{{fenwick_version}}"
+      image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -224,13 +191,13 @@
 
   - name: pause for wait to fenwick
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds | int }}"
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: Launch critwall
     become: yes
     docker_container:
       name: critwall
-      image: "{{si_repo_path}}/critwall:{{critwall_version}}"
+      image: "{{SI_REPO_PATH}}/critwall:{{CRITWALL_VERSION}}"
       user: "opencadc:opencadc"
       links:
         - "pg12db:pg12db"
@@ -240,13 +207,13 @@
 
   - name: pause for wait to critwall
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds | int }}"
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: Launch luskan
     become: yes
     docker_container:
       name: luskan
-      image: "{{si_repo_path}}/luskan:{{luskan_version}}"
+      image: "{{SI_REPO_PATH}}/luskan:{{LUSKAN_VERSION}}"
       user: "tomcat:tomcat"
       links:
         - "pg12db:pg12db"
@@ -256,7 +223,7 @@
 
   - name: pause for wait to luskan
     ansible.builtin.pause:
-      seconds: "{{ wait_seconds | int }}"
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: create a folder for certificates
     become: yes
@@ -265,11 +232,11 @@
       state: directory
       mode: 0775
 
-  - name: Launch {{haproxy_image}}
+  - name: Launch {{HAPROXY_IMAGE}}
     become: yes
     docker_container:
       name: haproxy
-      image: "{{haproxy_image}}:latest"
+      image: "{{HAPROXY_IMAGE}}:latest"
       ports:
         - "8443:443"
       volumes:
