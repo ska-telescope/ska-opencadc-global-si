@@ -6,10 +6,8 @@
   - BALDUR_VERSION: 0.3.0
   - MINOC_VERSION: 0.9.1
   - RAVEN_VERSION: 0.7.0
-  - TANTAR_VERSION: 0.4.0
   - RATIK_VERSION: 0.1.2
   - FENWICK_VERSION: 0.5.2
-  - CRITWALL_VERSION: 0.4.0
   - LUSKAN_VERSION: 0.6.0
   - POSTGRESQL_IMAGE: "swsrc/cadc-postgresql-12-dev"
   - HAPROXY_IMAGE: "amigahub/cadc-haproxy"
@@ -84,12 +82,6 @@
       name: "{{SI_REPO_PATH}}/raven:{{RAVEN_VERSION}}"
       source: pull
 
-  - name: Pull tantar:{{TANTAR_VERSION}}
-    become: yes
-    docker_image:
-      name: "{{SI_REPO_PATH}}/tantar:{{TANTAR_VERSION}}"
-      source: pull
-
   - name: Pull ratik:{{RATIK_VERSION}}
     become: yes
     docker_image:
@@ -100,12 +92,6 @@
     become: yes
     docker_image:
       name: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
-      source: pull
-
-  - name: Pull critwall:{{CRITWALL_VERSION}}
-    become: yes
-    docker_image:
-      name: "{{SI_REPO_PATH}}/critwall:{{CRITWALL_VERSION}}"
       source: pull
 
   - name: Pull luskan:{{LUSKAN_VERSION}}
@@ -145,22 +131,6 @@
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
-  - name: Launch tantar
-    become: yes
-    docker_container:
-      name: tantar
-      image: "{{SI_REPO_PATH}}/tantar:{{TANTAR_VERSION}}"
-      user: "opencadc:opencadc"
-      links:
-        - "pg12db:pg12db"
-      volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/tantar:/config:ro"
-      state: started
-
-  - name: pause for wait to tantar
-    ansible.builtin.pause:
-      seconds: "{{ WAIT_SECONDS | int }}"
-
   - name: Launch ratik
     become: yes
     docker_container:
@@ -190,22 +160,6 @@
       state: started
 
   - name: pause for wait to fenwick
-    ansible.builtin.pause:
-      seconds: "{{ WAIT_SECONDS | int }}"
-
-  - name: Launch critwall
-    become: yes
-    docker_container:
-      name: critwall
-      image: "{{SI_REPO_PATH}}/critwall:{{CRITWALL_VERSION}}"
-      user: "opencadc:opencadc"
-      links:
-        - "pg12db:pg12db"
-      volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/critwall:/config:ro"
-      state: started
-
-  - name: pause for wait to critwall
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
