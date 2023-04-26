@@ -1,35 +1,30 @@
 ---
 - hosts: localhost
   vars:
-  - CONFIG_FOLDER: "/home/gi-spsrc/"
+  - BASE_DIR: "/home/ubuntu"
+  - CONFIG_FOLDER: "{{BASE_DIR}}/config"
+  - LOGS_FOLDER: "{{BASE_DIR}}/logs"
+  # SSL certificates 'server-cert.pem' (server's public+private SSL keys)
+  # needs to be in 'certificates', servers cacerts in subdir 'cacerts' (e.g. fullchain.pem
+  # from letsencrypt
+  - CERTIFICATES_FOLDER: "{{BASE_DIR}}/certificates/cacerts"  
+  - GIT_REPO: "https://gitlab.com/fkirsten/global-si"
+  - GIT_VERSION: main
   - SI_REPO_PATH: "images.opencadc.org/storage-inventory"
+  - CORE_REPO_PATH: "images.opencadc.org/core"
   - BALDUR_VERSION: 0.3.0
-  - MINOC_VERSION: 0.9.1
   - RAVEN_VERSION: 0.7.0
   - RATIK_VERSION: 0.1.2
   - FENWICK_VERSION: 0.5.2
   - LUSKAN_VERSION: 0.6.0
+  - REG_VERSION: 1.0.1
   - POSTGRESQL_IMAGE: "swsrc/cadc-postgresql-12-dev"
   - HAPROXY_IMAGE: "amigahub/cadc-haproxy"
   - WAIT_SECONDS: 7
   - WAIT_SECONDS_LONG: 10
-
+  - HAPROXY_EXPOSED_PORT: 443
+  
   tasks:
-
-  - name: creating {{CONFIG_FOLDER}}
-    become: yes
-    ansible.builtin.file:
-      path: "{{CONFIG_FOLDER}}"
-      state: directory
-      mode: 0775
-
-  - name: Clone repo
-    become: yes
-    ansible.builtin.git:
-      repo: 'https://gitlab.com/fkirsten/global-si'
-      dest:  "{{CONFIG_FOLDER}}/global-si"
-      #version: swsrc
-    ignore_errors: True
 
   - name: Install dependencies python-crypto python3-pi
     become: yes
@@ -52,6 +47,35 @@
     pip:
       name: docker
 
+  - name: creating {{CONFIG_FOLDER}}
+    become: yes
+    ansible.builtin.file:
+      path: "{{CONFIG_FOLDER}}"
+      state: directory
+      mode: 0775
+
+  - name: creating {{CERTIFICATES_FOLDER}}
+    become: yes
+    ansible.builtin.file:
+      path: "{{CERTIFICATES_FOLDER}}"
+      state: directory
+      mode: 0775
+
+  - name: creating {{LOGS_FOLDER}}
+    become: yes
+    ansible.builtin.file:
+      path: "{{LOGS_FOLDER}}"
+      state: directory
+      mode: 0775
+
+  - name: Clone repo with configs
+    become: yes
+    ansible.builtin.git:
+      repo: "{{GIT_REPO}}"
+      dest:  "{{CONFIG_FOLDER}}"
+      version: "{{GIT_VERSION}}"
+    ignore_errors: True
+
   - name: Pull {{POSTGRESQL_IMAGE}}
     become: yes
     docker_image:
@@ -70,10 +94,10 @@
       name: "{{SI_REPO_PATH}}/baldur:{{BALDUR_VERSION}}"
       source: pull
 
-  - name: Pull minoc:{{MINOC_VERSION}}
+  - name: Pull reg:{{REG_VERSION}}
     become: yes
     docker_image:
-      name: "{{SI_REPO_PATH}}/minoc:{{MINOC_VERSION}}"
+      name: "{{CORE_REPO_PATH}}/reg:{{REG_VERSION}}"
       source: pull
 
   - name: Pull raven:{{RAVEN_VERSION}}
@@ -114,6 +138,36 @@
   - name: pause for postgresl
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS_LONG | int }}"
+
+  - name: Launch registry
+    become: yes
+    docker_container:
+      name: reg
+      image: "{{SI_REPO_PATH}}/reg:{{REG_VERSION}}"
+      user: "tomcat:tomcat"
+      volumes:
+        - "{{CONFIG_FOLDER}}/config/reg:/config:ro"
+      state: started
+
+  - name: pause for wait to reg
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch baldur
+    become: yes
+    docker_container:
+      name: baldur
+      image: "{{SI_REPO_PATH}}/baldur:{{BALDUR_VERSION}}"
+      user: "tomcat:tomcat"
+      links:
+        - "pg12db:pg12db"
+      volumes:
+        - "{{CONFIG_FOLDER}}/global-si/config/baldur:/config:ro"
+      state: started
+
+  - name: pause for wait to baldur
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
 
   - name: Launch raven
     become: yes
@@ -179,28 +233,21 @@
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
-  - name: create a folder for certificates
-    become: yes
-    ansible.builtin.file:
-      path: "{{CONFIG_FOLDER}}/global-si/certs"
-      state: directory
-      mode: 0775
-
   - name: Launch {{HAPROXY_IMAGE}}
     become: yes
     docker_container:
       name: haproxy
       image: "{{HAPROXY_IMAGE}}:latest"
       ports:
-        - "8443:443"
+        - "443:443"
       volumes:
         - "{{CONFIG_FOLDER}}/global-si/logs/haproxy:/logs:rw"
         - "{{CONFIG_FOLDER}}/global-si/certs:/config:ro"
         - "{{CONFIG_FOLDER}}/global-si/config/haproxy:/usr/local/etc/haproxy/:rw"
       links:
-#        - "minoc:minoc"
+        - "reg:reg"
         - "luskan:luskan"
-        - "critwall:critwall"
-        - "fenwick:fenwick"
+	- "baldur:baldur"
+        - "raven:raven"
       state: started
 
