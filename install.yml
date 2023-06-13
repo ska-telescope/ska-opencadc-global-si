@@ -12,11 +12,11 @@
   - GIT_VERSION: main
   - SI_REPO_PATH: "images.opencadc.org/storage-inventory"
   - CORE_REPO_PATH: "images.opencadc.org/core"
-  - BALDUR_VERSION: 0.3.0
-  - RAVEN_VERSION: 0.7.0
-  - RATIK_VERSION: 0.1.2
-  - FENWICK_VERSION: 0.5.2
-  - LUSKAN_VERSION: 0.6.0
+  - BALDUR_VERSION: 0.3.3
+  - RAVEN_VERSION: 0.7.4
+  - RATIK_VERSION: 0.1.5
+  - FENWICK_VERSION: 0.5.5
+  - LUSKAN_VERSION: 0.6.3
   - REG_VERSION: 1.0.1
   - POSTGRESQL_IMAGE: "swsrc/cadc-postgresql-12-dev"
   - HAPROXY_IMAGE: "amigahub/cadc-haproxy"
@@ -169,6 +169,24 @@
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
+  - name: Launch fenwick
+    become: yes
+    docker_container:
+      name: fenwick
+      image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
+      user: "opencadc:opencadc"
+      links:
+        - "pg12db:pg12db"
+      volumes:
+        - "{{CONFIG_FOLDER}}/global-si/config/fenwick:/config:ro"
+      state: started
+
+  - name: pause for wait to fenwick
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  # raven needs to be launched AFTER fenwick as raven queries a table that is
+  # initiated by fenwick
   - name: Launch raven
     become: yes
     docker_container:
@@ -198,22 +216,6 @@
       state: started
 
   - name: pause for wait to ratik
-    ansible.builtin.pause:
-      seconds: "{{ WAIT_SECONDS | int }}"
-
-  - name: Launch fenwick
-    become: yes
-    docker_container:
-      name: fenwick
-      image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
-      user: "opencadc:opencadc"
-      links:
-        - "pg12db:pg12db"
-      volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/fenwick:/config:ro"
-      state: started
-
-  - name: pause for wait to fenwick
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
