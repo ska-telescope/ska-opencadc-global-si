@@ -4,12 +4,16 @@
 docker pull swsrc/cadc-postgresql-12-dev
 docker pull amigahub/cadc-haproxy
 docker pull swsrc/minoc
-docker pull swsrc/luskan
-docker pull amigahub/fenwick
-docker pull amigahub/crtiwall
+#docker pull swsrc/luskan
+docker pull images.opencadc.org/storage-inventory/luskan:0.6.0
+#docker pull amigahub/fenwick
+docker pull images.opencadc.org/storage-inventory/fenwick:0.5.4
+#docker pull amigahub/crtiwall
+docker pull images.opencadc.org/storage-inventory/critwall:0.4.0
 
 # Default config files locate in ${CONFIG_FOLDER}
-$CONFIG_FOLDER="/home/ubuntu/software/src/cadc-storage-inventory"
+#$CONFIG_FOLDER="/home/ubuntu/software/src/cadc-storage-inventory"
+$CONFIG_FOLDER="/home/gi-spsrc/software/global-si"
 # Define where the data will live, directory need XXX permissons
 $DATA_BASE_DIR="/data/swsrc"
 
