@@ -1,43 +1,44 @@
 ---
 - hosts: localhost
-  vars:
-  - BASE_DIR: "/home/ubuntu"
-  - CONFIG_FOLDER: "{{BASE_DIR}}/config"
-  - LOGS_FOLDER: "{{BASE_DIR}}/logs"
-  # SSL certificates 'server-cert.pem' (server's public+private SSL keys)
-  # needs to be in 'certificates', servers cacerts in subdir 'cacerts' (e.g. fullchain.pem
-  # from letsencrypt
-  - CERTIFICATES_FOLDER: "{{BASE_DIR}}/certificates/cacerts"  
-  - GIT_REPO: "https://gitlab.com/fkirsten/global-si"
-  - GIT_VERSION: main
-  - SI_REPO_PATH: "images.opencadc.org/storage-inventory"
-  - CORE_REPO_PATH: "images.opencadc.org/core"
-  - BALDUR_VERSION: 0.3.3
-  - RAVEN_VERSION: 0.7.4
-  - RATIK_VERSION: 0.1.5
-  - FENWICK_VERSION: 0.5.5
-  - LUSKAN_VERSION: 0.6.3
-  - REG_VERSION: 1.0.1
-  - POSTGRESQL_IMAGE: "swsrc/cadc-postgresql-12-dev"
-  - HAPROXY_IMAGE: "amigahub/cadc-haproxy"
-  - WAIT_SECONDS: 7
-  - WAIT_SECONDS_LONG: 10
-  - HAPROXY_EXPOSED_PORT: 443
-  
+  vars_files:
+  # check out vars.template.yaml for a description of the required paramters
+    - vars.yaml
+
   tasks:
 
-  - name: Install dependencies python-crypto python3-pi
-    become: yes
-    ansible.builtin.apt:
-      pkg:
+  - name: Show ansible_python_interpreter
+    debug:
+      var: ansible_python_interpreter
+
+  - name: Set dependency package names for Debian
+    set_fact:
+      dependency_packages:
         - python-crypto
         - python3-pip
+        - docker-ce
+        - acl
+    when: ansible_os_family == "Debian"
+
+  - name: Set package names for RedHat
+    set_fact:
+      dependency_packages:
+        - python3.11-pip # ansible has python3.11 as a dependency (instead of just python3, which would have been sane)
+        - python3.11-setuptools
+        - docker-ce
+        - acl
+    when: ansible_os_family == "RedHat"
+
+  - name: Install dependencies
+    become: yes
+    ansible.builtin.package:
+      name: "{{ dependency_packages }}"
       state: present
-      
+
   - name: Install Python bcoz docker SDK
     package:
-            name: "python3"
-            state: present
+      name: "python3"
+      state: present
+
   - name: Check docker sdk installed or not
     command: "pip3 list | grep docker"
     register: docker_sdk
@@ -54,10 +55,10 @@
       state: directory
       mode: 0775
 
-  - name: creating {{CERTIFICATES_FOLDER}}
+  - name: creating {{CACERTIFICATES_FOLDER}}
     become: yes
     ansible.builtin.file:
-      path: "{{CERTIFICATES_FOLDER}}"
+      path: "{{CACERTIFICATES_FOLDER}}"
       state: directory
       mode: 0775
 
@@ -67,14 +68,6 @@
       path: "{{LOGS_FOLDER}}"
       state: directory
       mode: 0775
-
-  - name: Clone repo with configs
-    become: yes
-    ansible.builtin.git:
-      repo: "{{GIT_REPO}}"
-      dest:  "{{CONFIG_FOLDER}}"
-      version: "{{GIT_VERSION}}"
-    ignore_errors: True
 
   - name: Pull {{POSTGRESQL_IMAGE}}
     become: yes
@@ -124,6 +117,11 @@
       name: "{{SI_REPO_PATH}}/luskan:{{LUSKAN_VERSION}}"
       source: pull
 
+  - name: Create user-defined bridge network
+    become: yes
+    docker_network:
+      name: si-network
+
   - name: Launch {{POSTGRESQL_IMAGE}}:latest
     become: yes
     docker_container:
@@ -132,9 +130,12 @@
       ports:
         - "5432:5432"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/postgresql:/config:ro"
-        - "{{CONFIG_FOLDER}}/global-si/logs/postgresql:/logs:rw"
+        - "{{CONFIG_FOLDER}}/postgresql:/config:ro"
+        - "{{LOGS_FOLDER}}:/logs:rw"
+      networks:
+        - name: si-network	
       state: started
+
   - name: pause for postgresl
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS_LONG | int }}"
@@ -146,7 +147,9 @@
       image: "{{SI_REPO_PATH}}/reg:{{REG_VERSION}}"
       user: "tomcat:tomcat"
       volumes:
-        - "{{CONFIG_FOLDER}}/config/reg:/config:ro"
+        - "{{CONFIG_FOLDER}}/reg:/config:ro"
+      networks:
+        - name: si-network	
       state: started
 
   - name: pause for wait to reg
@@ -159,29 +162,77 @@
       name: baldur
       image: "{{SI_REPO_PATH}}/baldur:{{BALDUR_VERSION}}"
       user: "tomcat:tomcat"
-      links:
-        - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/baldur:/config:ro"
+        - "{{CONFIG_FOLDER}}/baldur:/config:ro"
+      networks:
+        - name: si-network	
       state: started
 
   - name: pause for wait to baldur
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
-  - name: Launch fenwick
+  - name: Launch fenwick-cadc
     become: yes
     docker_container:
-      name: fenwick
+      name: fenwick-cadc
       image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
       user: "opencadc:opencadc"
-      links:
-        - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/fenwick:/config:ro"
+        - "{{CONFIG_FOLDER}}/fenwick/cadc:/config:ro"
+      networks:
+        - name: si-network	
       state: started
 
-  - name: pause for wait to fenwick
+  - name: pause for wait to fenwick-cadc
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch fenwick-swesrc
+    become: yes
+    docker_container:
+      name: fenwick-swesrc
+      image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
+      user: "opencadc:opencadc"
+      volumes:
+        - "{{CONFIG_FOLDER}}/fenwick/swesrc:/config:ro"
+      networks:
+        - name: si-network	
+      state: started
+
+  - name: pause for wait to fenwick-swesrc
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch fenwick-swisrc
+    become: yes
+    docker_container:
+      name: fenwick-swisrc
+      image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
+      user: "opencadc:opencadc"
+      volumes:
+        - "{{CONFIG_FOLDER}}/fenwick/swisrc:/config:ro"
+      networks:
+        - name: si-network	
+      state: started
+
+  - name: pause for wait to fenwick-swisrc
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch fenwick-spsrc
+    become: yes
+    docker_container:
+      name: fenwick-spsrc
+      image: "{{SI_REPO_PATH}}/fenwick:{{FENWICK_VERSION}}"
+      user: "opencadc:opencadc"
+      volumes:
+        - "{{CONFIG_FOLDER}}/fenwick/spsrc:/config:ro"
+      networks:
+        - name: si-network	
+      state: started
+
+  - name: pause for wait to fenwick-spsrc
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
@@ -193,29 +244,77 @@
       name: raven
       image: "{{SI_REPO_PATH}}/raven:{{RAVEN_VERSION}}"
       user: "tomcat:tomcat"
-      links:
-        - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/raven:/config:ro"
+        - "{{CONFIG_FOLDER}}/raven:/config:ro"
+      networks:
+        - name: si-network	
       state: started
 
   - name: pause for wait to raven
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
-  - name: Launch ratik
+  - name: Launch ratik-cadc
     become: yes
     docker_container:
-      name: ratik
+      name: ratik-cadc
       image: "{{SI_REPO_PATH}}/ratik:{{RATIK_VERSION}}"
       user: "opencadc:opencadc"
-      links:
-        - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/ratik:/config:ro"
+        - "{{CONFIG_FOLDER}}/ratik/cadc:/config:ro"
+      networks:
+        - name: si-network	
       state: started
 
-  - name: pause for wait to ratik
+  - name: pause for wait to ratik-cadc
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch ratik-swesrc
+    become: yes
+    docker_container:
+      name: ratik-swesrc
+      image: "{{SI_REPO_PATH}}/ratik:{{RATIK_VERSION}}"
+      user: "opencadc:opencadc"
+      volumes:
+        - "{{CONFIG_FOLDER}}/ratik/swesrc:/config:ro"
+      networks:
+        - name: si-network	
+      state: started
+
+  - name: pause for wait to ratik-swesrc
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch ratik-swisrc
+    become: yes
+    docker_container:
+      name: ratik-swisrc
+      image: "{{SI_REPO_PATH}}/ratik:{{RATIK_VERSION}}"
+      user: "opencadc:opencadc"
+      volumes:
+        - "{{CONFIG_FOLDER}}/ratik/swisrc:/config:ro"
+      networks:
+        - name: si-network	
+      state: started
+
+  - name: pause for wait to ratik-swisrc
+    ansible.builtin.pause:
+      seconds: "{{ WAIT_SECONDS | int }}"
+
+  - name: Launch ratik-spsrc
+    become: yes
+    docker_container:
+      name: ratik-spsrc
+      image: "{{SI_REPO_PATH}}/ratik:{{RATIK_VERSION}}"
+      user: "opencadc:opencadc"
+      volumes:
+        - "{{CONFIG_FOLDER}}/ratik/spsrc:/config:ro"
+      networks:
+        - name: si-network	
+      state: started
+
+  - name: pause for wait to ratik-spsrc
     ansible.builtin.pause:
       seconds: "{{ WAIT_SECONDS | int }}"
 
@@ -225,10 +324,10 @@
       name: luskan
       image: "{{SI_REPO_PATH}}/luskan:{{LUSKAN_VERSION}}"
       user: "tomcat:tomcat"
-      links:
-        - "pg12db:pg12db"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/config/luskan:/config:ro"
+        - "{{CONFIG_FOLDER}}/luskan:/config:ro"
+      networks:
+        - name: si-network	
       state: started
 
   - name: pause for wait to luskan
@@ -241,15 +340,12 @@
       name: haproxy
       image: "{{HAPROXY_IMAGE}}:latest"
       ports:
-        - "443:443"
+        - "{{HAPROXY_EXPOSED_PORT}}:443"
       volumes:
-        - "{{CONFIG_FOLDER}}/global-si/logs/haproxy:/logs:rw"
-        - "{{CONFIG_FOLDER}}/global-si/certs:/config:ro"
-        - "{{CONFIG_FOLDER}}/global-si/config/haproxy:/usr/local/etc/haproxy/:rw"
-      links:
-        - "reg:reg"
-        - "luskan:luskan"
-	- "baldur:baldur"
-        - "raven:raven"
+        - "{{LOGS_FOLDER}}:/logs:rw"
+        - "{{CERTIFICATES_FOLDER}}:/config:ro"
+        - "{{CONFIG_FOLDER}}/haproxy:/usr/local/etc/haproxy/:rw"
+      networks:
+        - name: si-network	
       state: started
 
