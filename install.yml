@@ -15,7 +15,7 @@
       dependency_packages:
         - python-crypto
         - python3-pip
-        - docker-ce
+        #- docker-ce
         - acl
     when: ansible_os_family == "Debian"
 
@@ -144,7 +144,7 @@
     become: yes
     docker_container:
       name: reg
-      image: "{{SI_REPO_PATH}}/reg:{{REG_VERSION}}"
+      image: "{{CORE_REPO_PATH}}/reg:{{REG_VERSION}}"
       user: "tomcat:tomcat"
       volumes:
         - "{{CONFIG_FOLDER}}/reg:/config:ro"
