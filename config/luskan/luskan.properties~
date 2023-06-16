@@ -1,0 +1,10 @@
+# true if luskan is running on a storage site, false or not set if
+# running on a global site
+org.opencadc.luskan.isStorageSite=true
+
+# optional authorization: allow anonymous queries (default: false for backwards compatibility)
+# needs to be set when no GMS service is called for authorization (which is the case for SWSRC/SPSRC)
+org.opencadc.luskan.allowAnon=true
+
+# optional: group(s) whose members have authorization to query luskan 
+#org.opencadc.luskan.allowedGroup= ivo://cadc.nrc.ca/gms?SWSRC

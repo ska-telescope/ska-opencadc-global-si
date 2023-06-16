@@ -1,0 +1,18 @@
+# database connection pools
+org.opencadc.baldur.inventory.maxActive=10
+org.opencadc.baldur.inventory.username=cadmin
+org.opencadc.baldur.inventory.password=pw-cadmin
+org.opencadc.baldur.inventory.url=jdbc:postgresql://pg12db/globaldb
+
+## enable support for haproxy SSL termination + pass client cert
+ca.nrc.cadc.auth.PrincipalExtractor.enableClientCertHeader=true
+tomcat.connector.secure=true
+tomcat.connector.scheme=https
+#tomcat.connector.proxyName=localhost for testing on localhost
+tomcat.connector.proxyName=spsrc27.iaa.csic.es
+tomcat.connector.proxyPort=18019
+
+## enable no-op authenticator plugin
+ca.nrc.cadc.auth.Authenticator=ca.nrc.cadc.auth.NoOpAuthenticator
+
+
