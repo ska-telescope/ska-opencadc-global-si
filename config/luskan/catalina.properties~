@@ -1,0 +1,38 @@
+#The tapadm pool manages (create, alter, drop) tap_schema tables and manages the tap_schema content.
+#The uws pool manages (create, alter, drop) uws tables and manages the uws content (creates and
+#modifies jobs in the uws schema when jobs are created and executed by users.
+#
+#The query pool is used to run TAP queries, including creating tables in the tap_upload schema.
+#
+#All three pools must have the same JDBC URL (e.g. use the same database) with PostgreSQL.
+#This may be relaxed in future. In addition, the TAP service does not currerently support a
+#configurable schema name: it assumes a schema named inventory holds the content.
+
+# database connection pools
+org.opencadc.luskan.uws.maxActive=10
+org.opencadc.luskan.uws.username=tapadm
+org.opencadc.luskan.uws.password=pw-tapadm
+org.opencadc.luskan.uws.url=jdbc:postgresql://pg12db/minocdb
+
+org.opencadc.luskan.query.maxActive=10
+org.opencadc.luskan.query.username=tapuser
+org.opencadc.luskan.query.password=pw-tapuser
+org.opencadc.luskan.query.url=jdbc:postgresql://pg12db/minocdb
+
+org.opencadc.luskan.tapadm.maxActive=10
+org.opencadc.luskan.tapadm.username=tapadm
+org.opencadc.luskan.tapadm.password=pw-tapadm
+org.opencadc.luskan.tapadm.url=jdbc:postgresql://pg12db/minocdb
+
+## enable support for haproxy SSL termination + pass client cert
+ca.nrc.cadc.auth.PrincipalExtractor.enableClientCertHeader=true
+tomcat.connector.secure=true
+tomcat.connector.scheme=https
+#tomcat.connector.proxyName=localhost for testing on localhost
+tomcat.connector.proxyName=130.238.29.214
+tomcat.connector.proxyPort=443
+
+## enable no-op authenticator plugin
+ca.nrc.cadc.auth.Authenticator=ca.nrc.cadc.auth.NoOpAuthenticator
+
+

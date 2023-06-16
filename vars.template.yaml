@@ -1,0 +1,25 @@
+---
+BASE_DIR:               # directory relative to which logs/configs/certificates are; e.g. "/home/user/"
+CONFIG_FOLDER:          # path to where this repo lives; e.g. "{{BASE_DIR}}/global-si"
+LOGS_FOLDER:            # haproxy and postgresql logs go here; e.g. "{{CONFIG_FOLDER}}/logs"
+# SSL certificates 'server-cert.pem' (server's public+private SSL keys)
+# needs to be in 'certificates', servers cacerts in subdir 'cacerts' (e.g. fullchain.pem
+# from letsencrypt
+CERTIFICATES_FOLDER:    # path to where server-cert.pem is; e.g. "{{CONFIG_FOLER}}/certificates"
+CACERTIFICATES_FOLDER:  # extra CA-certs (e.g. fullchain.pem) live here; expected to be "{{CERTIFICATES_FOLDER}}/cacerts"
+SI_REPO_PATH:           # CADC storage inventory repo: "images.opencadc.org/storage-inventory"
+CORE_REPO_PATH:         # CADC core repo: "images.opencadc.org/core"
+RAVEN_VERSION: 0.7.4    # which version of raven to use (pulled from SI_REPO_PATH)
+BALDUR_VERSION: 0.3.3   # and baldur
+RATIK_VERSION: 0.1.5    # and ratik
+FENWICK_VERSION: 0.5.5  # and fenwick
+LUSKAN_VERSION: 0.6.3   # and luskan
+REG_VERSION: 1.0.1      # which version of the registry service to use (pulled from CORE_REPO_PATH)
+POSTGRESQL_IMAGE:       # repo that holds the postgresql image: "swsrc/cadc-postgresql-12-dev"
+HAPROXY_IMAGE:          # repo that has the haproxy image: "amigahub/cadc-haproxy"
+WAIT_SECONDS: 7         # time in seconds to wait for container to be started before going to the next
+WAIT_SECONDS_LONG: 70   # same but longer
+HAPROXY_EXPOSED_PORT:   # port on which the haproxy should listen. This port is mapped to 443 in the container.
+
+
+
