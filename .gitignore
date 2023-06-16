@@ -1,6 +1,6 @@
 *~
 *.pem
 vars.yaml
-./logs
-./certificates
+logs
+certificates
 
