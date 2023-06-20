@@ -164,6 +164,7 @@
       user: "tomcat:tomcat"
       volumes:
         - "{{CONFIG_FOLDER}}/baldur:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -180,6 +181,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/fenwick/cadc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -196,6 +198,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/fenwick/swesrc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -212,6 +215,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/fenwick/swisrc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -228,6 +232,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/fenwick/spsrc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -246,6 +251,7 @@
       user: "tomcat:tomcat"
       volumes:
         - "{{CONFIG_FOLDER}}/raven:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -262,6 +268,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/ratik/cadc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -278,6 +285,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/ratik/swesrc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -294,6 +302,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/ratik/swisrc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -310,6 +319,7 @@
       user: "opencadc:opencadc"
       volumes:
         - "{{CONFIG_FOLDER}}/ratik/spsrc:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
@@ -326,6 +336,7 @@
       user: "tomcat:tomcat"
       volumes:
         - "{{CONFIG_FOLDER}}/luskan:/config:ro"
+        - "{{CONFIG_FOLDER}}/cadc-registry.properties:/config/cadc-registry.properties:ro"
       networks:
         - name: si-network	
       state: started
