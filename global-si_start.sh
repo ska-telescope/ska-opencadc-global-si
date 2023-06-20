@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # create a tempory set of variables from the (hopefully) existing vars.yaml
 cat vars.yaml | sed 's/---/#/g' | sed 's/: /=/g' | sed 's/{{/${/g' | sed 's/}}/}/g' > /tmp/vars.sh
 source /tmp/vars.sh
@@ -108,7 +110,7 @@ sleep ${WAIT_SECONDS}
 docker run -d \
        --volume=${CERTIFICATES_FOLDER}/:/config:ro \
        --volume=${LOGS_FOLDER}:/logs:rw \
-       --volume=${CONFIG_FOLDER_FOLDER}/haproxy:/usr/local/etc/haproxy/:rw \
+       --volume=${CONFIG_FOLDER}/haproxy:/usr/local/etc/haproxy/:rw \
        -p ${HAPROXY_EXPOSED_PORT}:443 \
        --name haproxy \
        --network si-network \
