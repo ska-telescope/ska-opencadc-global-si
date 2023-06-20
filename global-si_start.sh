@@ -47,6 +47,7 @@ sleep ${WAIT_SECONDS}
 # Launch baldur
 docker run -d \
        --volume=${CONFIG_FOLDER}/baldur:/config:ro \
+       --volume=${CONFIG_FOLDER}/cadc-registry.properties:/config/cadc-registry.properties:ro \
        --user tomcat:tomcat \
        --name baldur \
        --network si-network \
@@ -59,6 +60,7 @@ sites='cadc swesrc spsrc swisrc'
 for site in ${sites}; do
     docker run -d \
 	   --volume=${CONFIG_FOLDER}/fenwick/${site}:/config:ro \
+	   --volume=${CONFIG_FOLDER}/cadc-registry.properties:/config/cadc-registry.properties:ro \
 	   --user opencadc:opencadc \
 	   --name fenwick-${site} \
 	   --network si-network \
@@ -71,6 +73,7 @@ done
 for site in ${sites}; do
     docker run -d \
 	   --volume=${CONFIG_FOLDER}/ratik/${site}:/config:ro \
+	   --volume=${CONFIG_FOLDER}/cadc-registry.properties:/config/cadc-registry.properties:ro \
 	   --user opencadc:opencadc \
 	   --name ratik-${site} \
 	   --network si-network \
@@ -82,6 +85,7 @@ done
 # Launch raven
 docker run -d \
        --volume=${CONFIG_FOLDER}/raven:/config:ro \
+       --volume=${CONFIG_FOLDER}/cadc-registry.properties:/config/cadc-registry.properties:ro \
        --user tomcat:tomcat \
        --name raven \
        --network si-network \
@@ -92,6 +96,7 @@ sleep ${WAIT_SECONDS}
 # Launch luskan
 docker run -d \
        --volume=${CONFIG_FOLDER}/luskan:/config:ro \
+       --volume=${CONFIG_FOLDER}/cadc-registry.properties:/config/cadc-registry.properties:ro \
        --user tomcat:tomcat \
        --name luskan \
        --network si-network \
